@@ -140,7 +140,7 @@ export default function VoiceBot() {
             const utter = new SpeechSynthesisUtterance(data.reply);
             // Slightly increase speech rate for a faster voice
             try {
-              utter.rate = 1.7;
+              utter.rate = 1.3;
             } catch (e) {}
             utter.onend = () => setStatus("idle");
             utter.onerror = () => setStatus("idle");
