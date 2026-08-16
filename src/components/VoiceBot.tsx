@@ -109,6 +109,7 @@ export default function VoiceBot() {
             data?.error || "Something went wrong. Please try again.",
           );
         }
+        console.log(data);
 
         setMessages((prev) => [
           ...prev,
