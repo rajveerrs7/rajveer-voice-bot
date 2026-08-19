@@ -10,7 +10,7 @@ Built for the 100x.inc AI Engineer take-home assessment.
 1. You speak (or type) a question in the browser.
 2. The audio is sent to a serverless API route.
 3. **Groq `whisper-large-v3-turbo`** transcribes it.
-4. **Groq `llama-3.3-70b-versatile`**, given Rajveer's persona + your recent conversation, generates an
+4. **Groq `openai/gpt-oss-120b`**, given Rajveer's persona + your recent conversation, generates an
    answer in Rajveer's voice.
 5. **Groq `canopylabs/orpheus-v1-english`** (Orpheus TTS) turns the answer into speech.
 6. The transcript and audio are sent back and played in the browser.

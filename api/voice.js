@@ -7,7 +7,7 @@ import Groq from "groq-sdk";
 import { SYSTEM_PROMPT } from "../lib/persona.js";
 
 const STT_MODEL = "whisper-large-v3-turbo";
-const LLM_MODEL = "llama-3.3-70b-versatile";
+const LLM_MODEL = "openai/gpt-oss-120b";
 const TTS_MODEL = "canopylabs/orpheus-v1-english";
 const TTS_VOICE = "austin";
 
@@ -19,7 +19,11 @@ const MAX_REPLY_CHARS = 900; // keep TTS input reasonable and answers conversati
 function trimToSentence(text, maxChars) {
   if (text.length <= maxChars) return text;
   const cut = text.slice(0, maxChars);
-  const lastStop = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+  const lastStop = Math.max(
+    cut.lastIndexOf(". "),
+    cut.lastIndexOf("! "),
+    cut.lastIndexOf("? "),
+  );
   return lastStop > maxChars * 0.4 ? cut.slice(0, lastStop + 1) : cut + "...";
 }
 
@@ -31,7 +35,9 @@ export default async function handler(req, res) {
 
   if (!process.env.GROQ_API_KEY) {
     console.error("GROQ_API_KEY is not set.");
-    res.status(500).json({ error: "Server isn't configured correctly. Please try again later." });
+    res.status(500).json({
+      error: "Server isn't configured correctly. Please try again later.",
+    });
     return;
   }
 
@@ -41,7 +47,9 @@ export default async function handler(req, res) {
     const { audioBase64, mimeType, text, history } = req.body || {};
 
     if (audioBase64 && audioBase64.length > MAX_AUDIO_BASE64_CHARS) {
-      res.status(413).json({ error: "That recording is too long. Try asking something shorter." });
+      res.status(413).json({
+        error: "That recording is too long. Try asking something shorter.",
+      });
       return;
     }
 
@@ -51,10 +59,14 @@ export default async function handler(req, res) {
     if (!transcript && audioBase64) {
       const buffer = Buffer.from(audioBase64, "base64");
       if (buffer.length < 800) {
-        res.status(400).json({ error: "I didn't catch that. Could you try speaking again?" });
+        res.status(400).json({
+          error: "I didn't catch that. Could you try speaking again?",
+        });
         return;
       }
-      const file = new File([buffer], "audio.webm", { type: mimeType || "audio/webm" });
+      const file = new File([buffer], "audio.webm", {
+        type: mimeType || "audio/webm",
+      });
       const transcription = await groq.audio.transcriptions.create({
         file,
         model: STT_MODEL,
@@ -64,16 +76,25 @@ export default async function handler(req, res) {
     }
 
     if (!transcript) {
-      res.status(400).json({ error: "I didn't catch that. Could you try again?" });
+      res
+        .status(400)
+        .json({ error: "I didn't catch that. Could you try again?" });
       return;
     }
 
     // 2) Build messages: persona + recent history + current question
-    const safeHistory = Array.isArray(history) ? history.slice(-MAX_HISTORY_MESSAGES) : [];
+    const safeHistory = Array.isArray(history)
+      ? history.slice(-MAX_HISTORY_MESSAGES)
+      : [];
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
       ...safeHistory
-        .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+        .filter(
+          (m) =>
+            m &&
+            (m.role === "user" || m.role === "assistant") &&
+            typeof m.content === "string",
+        )
         .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) })),
       { role: "user", content: transcript },
     ];
@@ -87,7 +108,9 @@ export default async function handler(req, res) {
 
     let reply = completion.choices?.[0]?.message?.content?.trim();
     if (!reply) {
-      res.status(502).json({ error: "Couldn't generate a response. Please try again." });
+      res
+        .status(502)
+        .json({ error: "Couldn't generate a response. Please try again." });
       return;
     }
     reply = trimToSentence(reply, MAX_REPLY_CHARS);
@@ -116,6 +139,8 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error("Voice pipeline error:", err?.message || err);
-    res.status(500).json({ error: "Something went wrong on my end. Please try again." });
+    res
+      .status(500)
+      .json({ error: "Something went wrong on my end. Please try again." });
   }
 }
